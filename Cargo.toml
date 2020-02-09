@@ -5,6 +5,7 @@ authors = ["Jan van den Berg <rust@koozz.nl>"]
 license = "MIT"
 description = "Run git on multiple projects."
 repository = "https://github.com/koozz/mgit"
+documentation = "https://docs.rs/crate/mgit"
 readme = "README.md"
 edition = "2018"
 
