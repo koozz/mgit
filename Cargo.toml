@@ -1,0 +1,15 @@
+[package]
+name = "mgit"
+version = "0.1.0"
+authors = ["Jan van den Berg <rust@koozz.nl>"]
+license = "MIT"
+description = "Run git on multiple projects."
+repository = "https://github.com/koozz/mgit"
+readme = "README.md"
+edition = "2018"
+
+[dependencies]
+num_cpus = "1.12.0"
+termcolor = "1.1.0"
+threadpool = "1.7.1"
+walkdir = "2"
