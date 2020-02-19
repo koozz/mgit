@@ -56,14 +56,26 @@ fn fork(pool_size: usize, tx: &Sender<(PathBuf, Result<Child, Error>)>) {
 
 fn join(rx: Receiver<(PathBuf, Result<Child, Error>)>) -> Result<(), Error> {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
+    let mut success: u8 = 0;
+    let mut failed: u8 = 0;
+    let mut errors: u8 = 0;
     for (path, result) in rx.iter() {
         match result {
             Ok(child) => {
                 let output = child.wait_with_output()?;
                 let title_color = match output.status.code() {
-                    Some(0) => Some(Color::Green),
-                    Some(_) => Some(Color::Yellow),
-                    None => Some(Color::Red),
+                    Some(0) => {
+                        success += 1;
+                        Some(Color::Green)
+                    },
+                    Some(_) => {
+                        failed += 1;
+                        Some(Color::Yellow)
+                    },
+                    None => {
+                        errors += 1;
+                        Some(Color::Red)
+                    },
                 };
                 stdout.set_color(ColorSpec::new().set_fg(title_color).set_bold(true))?;
                 writeln!(&mut stdout, "{}", path.display())?;
@@ -80,8 +92,34 @@ fn join(rx: Receiver<(PathBuf, Result<Child, Error>)>) -> Result<(), Error> {
                 writeln!(&mut stderr(), "{}", path.display())?;
                 stdout.reset()?;
                 writeln!(&mut stderr(), "{}", err)?;
+                errors += 1;
             }
         };
     }
+
+    // Status line:
+    writeln!(&mut stdout)?;
+    stdout.set_color(ColorSpec::new().set_fg(Some(Color::Green)).set_bold(true))?;
+    write!(&mut stdout, "Success: ")?;
+    stdout.reset()?;
+    write!(&mut stdout, "{}", success)?;
+
+    if failed > 0 {
+        write!(&mut stdout, ", ")?;
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Yellow)).set_bold(true))?;
+        write!(&mut stdout, "Warnings: ")?;
+        stdout.reset()?;
+        write!(&mut stdout, "{}", failed)?;
+    }
+
+    if errors > 0 {
+        write!(&mut stdout, ", ")?;
+        stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true))?;
+        write!(&mut stdout, "Errors: ")?;
+        stdout.reset()?;
+        write!(&mut stdout, "{}", errors)?;
+    }
+    writeln!(&mut stdout)?;
+
     Ok(())
 }

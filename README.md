@@ -1,5 +1,9 @@
 # mgit
 
+[![Crates.io](https://img.shields.io/crates/v/mgit.svg)](https://crates.io/crates/mgit)
+[![Crates.io](https://img.shields.io/crates/l/mgit.svg)](https://github.com/koozz/mgit/blob/master/LICENSE)
+[![Crates.io](https://img.shields.io/crates/d/mgit.svg)](https://crates.io/crates/mgit)
+
 Multi-git is a quick tool that could easily have been created with some shell
 scripts, but it's a nice project to tackle a part of my daily workflow.
 It performs git actions on multiple directories within the current tree.
@@ -34,6 +38,19 @@ Keeping your code up to date, rebasing and using autostash:
 $ mgit pull --rebase --autostash
 ```
 
+## Output
+
+Per (found) git repository, the output will show:
+
+* The path of the repository on disk.
+* The output for the git action on that repository.
+
+As a summary it will show some statistics:
+
+```sh
+Success: 110, Warnings: 3
+```
+
 ## License
 
-MIT
+[MIT licensed](./LICENSE)

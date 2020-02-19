@@ -1,9 +1,12 @@
 [package]
 name = "mgit"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Jan van den Berg <rust@koozz.nl>"]
 license = "MIT"
 description = "Run git on multiple projects."
+keywords = ["cli", "git", "parallel"]
+categories = ["command-line-interface", "command-line-utilities"]
+homepage = "https://github.com/koozz/mgit"
 repository = "https://github.com/koozz/mgit"
 documentation = "https://docs.rs/crate/mgit"
 readme = "README.md"
