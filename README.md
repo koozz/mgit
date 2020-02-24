@@ -51,6 +51,25 @@ As a summary it will show some statistics:
 Success: 110, Warnings: 3
 ```
 
+## Roadmap / ideas
+
+* Use async.
+* Benchmark (and optimize?).
+
+## Changelog
+
+### 0.1.2
+
+* Moved output collection into spawned thread to release file handles earlier.
+
+### 0.1.1
+
+* Add a summary at the end of the output.
+
+### 0.1.0
+
+* Initial working version.
+
 ## License
 
 [MIT licensed](./LICENSE)

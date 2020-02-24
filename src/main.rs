@@ -5,11 +5,18 @@ extern crate walkdir;
 use std::env;
 use std::io::{stderr, Error, Write};
 use std::path::PathBuf;
-use std::process::{Child, Command, Stdio};
+use std::process::{Command, Stdio};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use threadpool::ThreadPool;
 use walkdir::WalkDir;
+use std::fmt::Write as FmtWrite;
+
+enum GitStatus {
+    SUCCESS,
+    FAILURE,
+    ERROR
+}
 
 fn main() {
     if env::args().len() <= 1 {
@@ -18,25 +25,24 @@ fn main() {
     }
 
     // Allow customizing pool size
-    let pool_size: usize = match env::var("MGIT_POOLSIZE") {
+    let pool_size: usize = match env::var("MGIT_PARALLEL") {
         Ok(val) => val.parse().unwrap_or(4),
         Err(_) => num_cpus::get(),
     };
 
     let (tx, rx) = channel();
-    fork(pool_size, &tx);
+    fork(pool_size, &tx).unwrap();
     drop(tx);
     join(rx).unwrap()
 }
 
-fn fork(pool_size: usize, tx: &Sender<(PathBuf, Result<Child, Error>)>) {
+fn fork(pool_size: usize, tx: &Sender<(PathBuf, GitStatus, String)>) -> Result<(), Error> {
     let pool = ThreadPool::new(pool_size);
-    for entry in WalkDir::new(env::current_dir().unwrap())
+    for entry in WalkDir::new(env::current_dir()?)
         .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_dir() && e.file_name().eq(".git"))
-    {
+        .filter(|e| e.file_type().is_dir() && e.file_name().eq(".git")) {
         let path = entry.path().parent().unwrap().to_owned();
         let tx = tx.clone();
         pool.execute(move || {
@@ -49,50 +55,69 @@ fn fork(pool_size: usize, tx: &Sender<(PathBuf, Result<Child, Error>)>) {
                 .stderr(Stdio::piped())
                 .spawn();
 
-            tx.send((path, result)).expect("Could not send data!");
+            let mut output = String::new();
+            let status: GitStatus;
+            match result {
+                Ok(child) => {
+                    let child_output = child.wait_with_output().unwrap();
+
+                    status = match child_output.status.code() {
+                        Some(0) => GitStatus::SUCCESS,
+                        Some(_) => GitStatus::FAILURE,
+                        None => GitStatus::ERROR
+                    };
+                    if !&child_output.stdout.is_empty() {
+                        writeln!(&mut output, "{}", String::from_utf8_lossy(&child_output.stdout)).unwrap();
+                    }
+                    if !&child_output.stderr.is_empty() {
+                        writeln!(&mut output, "{}", String::from_utf8_lossy(&child_output.stderr)).unwrap();
+                    }
+                }
+                Err(err) => {
+                    status = GitStatus::ERROR;
+                    writeln!(&mut output, "{}", err).unwrap();
+                }
+            }
+
+
+            tx.send((path, status, output)).expect("Could not send data!");
         });
     }
+    Ok(())
 }
 
-fn join(rx: Receiver<(PathBuf, Result<Child, Error>)>) -> Result<(), Error> {
+fn join(rx: Receiver<(PathBuf, GitStatus, String)>) -> Result<(), Error> {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
     let mut success: u8 = 0;
     let mut failed: u8 = 0;
     let mut errors: u8 = 0;
-    for (path, result) in rx.iter() {
-        match result {
-            Ok(child) => {
-                let output = child.wait_with_output()?;
-                let title_color = match output.status.code() {
-                    Some(0) => {
-                        success += 1;
-                        Some(Color::Green)
-                    },
-                    Some(_) => {
-                        failed += 1;
-                        Some(Color::Yellow)
-                    },
-                    None => {
-                        errors += 1;
-                        Some(Color::Red)
-                    },
-                };
-                stdout.set_color(ColorSpec::new().set_fg(title_color).set_bold(true))?;
-                writeln!(&mut stdout, "{}", path.display())?;
-                stdout.reset()?;
-                if !&output.stdout.is_empty() {
-                    writeln!(&mut stdout, "{}", String::from_utf8_lossy(&output.stdout))?;
-                }
-                if !&output.stderr.is_empty() {
-                    writeln!(&mut stderr(), "{}", String::from_utf8_lossy(&output.stderr))?;
-                }
-            }
-            Err(err) => {
-                stdout.set_color(ColorSpec::new().set_fg(Some(Color::Red)).set_bold(true))?;
-                writeln!(&mut stderr(), "{}", path.display())?;
-                stdout.reset()?;
-                writeln!(&mut stderr(), "{}", err)?;
+    for (path, status, output) in rx.iter() {
+
+        let title_color = match status {
+            GitStatus::SUCCESS => {
+                success += 1;
+                Some(Color::Green)
+            },
+            GitStatus::FAILURE => {
+                failed += 1;
+                Some(Color::Yellow)
+            },
+            GitStatus::ERROR => {
                 errors += 1;
+                Some(Color::Red)
+            }
+        };
+
+        stdout.set_color(ColorSpec::new().set_fg(title_color).set_bold(true))?;
+        writeln!(&mut stdout, "{}", path.display())?;
+        stdout.reset()?;
+
+        match status {
+            GitStatus::SUCCESS => {
+                writeln!(&mut stdout, "{}", output)?;
+            },
+            GitStatus::FAILURE | GitStatus::ERROR => {
+            writeln!(&mut stderr(), "{}", output)?;
             }
         };
     }
