@@ -3,6 +3,7 @@ extern crate threadpool;
 extern crate walkdir;
 
 use std::env;
+use std::fmt::Write as FmtWrite;
 use std::io::{stderr, Error, Write};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -10,12 +11,11 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 use termcolor::{Color, ColorChoice, ColorSpec, StandardStream, WriteColor};
 use threadpool::ThreadPool;
 use walkdir::WalkDir;
-use std::fmt::Write as FmtWrite;
 
 enum GitStatus {
     SUCCESS,
     FAILURE,
-    ERROR
+    ERROR,
 }
 
 fn main() {
@@ -37,12 +37,15 @@ fn main() {
 }
 
 fn fork(pool_size: usize, tx: &Sender<(PathBuf, GitStatus, String)>) -> Result<(), Error> {
+    let mut count = 0;
     let pool = ThreadPool::new(pool_size);
     for entry in WalkDir::new(env::current_dir()?)
         .follow_links(true)
         .into_iter()
         .filter_map(|e| e.ok())
-        .filter(|e| e.file_type().is_dir() && e.file_name().eq(".git")) {
+        .filter(|e| e.file_type().is_dir() && e.file_name().eq(".git"))
+    {
+        count += 1;
         let path = entry.path().parent().unwrap().to_owned();
         let tx = tx.clone();
         pool.execute(move || {
@@ -64,13 +67,23 @@ fn fork(pool_size: usize, tx: &Sender<(PathBuf, GitStatus, String)>) -> Result<(
                     status = match child_output.status.code() {
                         Some(0) => GitStatus::SUCCESS,
                         Some(_) => GitStatus::FAILURE,
-                        None => GitStatus::ERROR
+                        None => GitStatus::ERROR,
                     };
                     if !&child_output.stdout.is_empty() {
-                        writeln!(&mut output, "{}", String::from_utf8_lossy(&child_output.stdout)).unwrap();
+                        writeln!(
+                            &mut output,
+                            "{}",
+                            String::from_utf8_lossy(&child_output.stdout)
+                        )
+                        .unwrap();
                     }
                     if !&child_output.stderr.is_empty() {
-                        writeln!(&mut output, "{}", String::from_utf8_lossy(&child_output.stderr)).unwrap();
+                        writeln!(
+                            &mut output,
+                            "{}",
+                            String::from_utf8_lossy(&child_output.stderr)
+                        )
+                        .unwrap();
                     }
                 }
                 Err(err) => {
@@ -79,10 +92,17 @@ fn fork(pool_size: usize, tx: &Sender<(PathBuf, GitStatus, String)>) -> Result<(
                 }
             }
 
-
-            tx.send((path, status, output)).expect("Could not send data!");
+            tx.send((path, status, output))
+                .expect("Could not send data!");
         });
     }
+
+    let git_arguments: Vec<String> = env::args().skip(1).collect();
+    println!(
+        "Running 'git {}' on {} projects.",
+        git_arguments.join(" "),
+        count
+    );
     Ok(())
 }
 
@@ -92,16 +112,15 @@ fn join(rx: Receiver<(PathBuf, GitStatus, String)>) -> Result<(), Error> {
     let mut failed: u8 = 0;
     let mut errors: u8 = 0;
     for (path, status, output) in rx.iter() {
-
         let title_color = match status {
             GitStatus::SUCCESS => {
                 success += 1;
                 Some(Color::Green)
-            },
+            }
             GitStatus::FAILURE => {
                 failed += 1;
                 Some(Color::Yellow)
-            },
+            }
             GitStatus::ERROR => {
                 errors += 1;
                 Some(Color::Red)
@@ -114,10 +133,10 @@ fn join(rx: Receiver<(PathBuf, GitStatus, String)>) -> Result<(), Error> {
 
         match status {
             GitStatus::SUCCESS => {
-                writeln!(&mut stdout, "{}", output)?;
-            },
+                write!(&mut stdout, "{}", output)?;
+            }
             GitStatus::FAILURE | GitStatus::ERROR => {
-            writeln!(&mut stderr(), "{}", output)?;
+                write!(&mut stderr(), "{}", output)?;
             }
         };
     }
@@ -144,7 +163,5 @@ fn join(rx: Receiver<(PathBuf, GitStatus, String)>) -> Result<(), Error> {
         stdout.reset()?;
         write!(&mut stdout, "{}", errors)?;
     }
-    writeln!(&mut stdout)?;
-
     Ok(())
 }
