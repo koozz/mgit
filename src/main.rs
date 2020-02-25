@@ -108,9 +108,9 @@ fn fork(pool_size: usize, tx: &Sender<(PathBuf, GitStatus, String)>) -> Result<(
 
 fn join(rx: Receiver<(PathBuf, GitStatus, String)>) -> Result<(), Error> {
     let mut stdout = StandardStream::stdout(ColorChoice::Always);
-    let mut success: u8 = 0;
-    let mut failed: u8 = 0;
-    let mut errors: u8 = 0;
+    let mut success = 0;
+    let mut failed = 0;
+    let mut errors = 0;
     for (path, status, output) in rx.iter() {
         let title_color = match status {
             GitStatus::SUCCESS => {
@@ -163,5 +163,6 @@ fn join(rx: Receiver<(PathBuf, GitStatus, String)>) -> Result<(), Error> {
         stdout.reset()?;
         write!(&mut stdout, "{}", errors)?;
     }
+    writeln!(&mut stdout)?;
     Ok(())
 }

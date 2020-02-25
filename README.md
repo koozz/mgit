@@ -58,6 +58,10 @@ Success: 110, Warnings: 3
 
 ## Changelog
 
+### 0.1.5
+
+* Add empty line at the end of the output.
+
 ### 0.1.4
 
 * Updated dependencies.
