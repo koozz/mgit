@@ -58,6 +58,10 @@ Success: 110, Warnings: 3
 
 ## Changelog
 
+### 0.1.4
+
+* Updated dependencies.
+
 ### 0.1.3
 
 * Output the amount of projects affected (and the command) up front.
