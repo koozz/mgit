@@ -58,6 +58,10 @@ Success: 110, Warnings: 3
 
 ## Changelog
 
+### 0.1.6
+
+* Updated walkdir dependency.
+
 ### 0.1.5
 
 * Add empty line at the end of the output.
