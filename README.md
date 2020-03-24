@@ -58,6 +58,10 @@ Success: 110, Warnings: 3
 
 ## Changelog
 
+### 0.1.7
+
+* Updated libc.
+
 ### 0.1.6
 
 * Updated walkdir dependency.
