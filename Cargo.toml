@@ -1,6 +1,6 @@
 [package]
 name = "mgit"
-version = "0.1.7"
+version = "0.1.8"
 authors = ["Jan van den Berg <rust@koozz.nl>"]
 license = "MIT"
 description = "Run git on multiple projects."

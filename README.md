@@ -3,7 +3,6 @@
 [![Version](https://img.shields.io/crates/v/mgit.svg)](https://crates.io/crates/mgit)
 [![License](https://img.shields.io/crates/l/mgit.svg)](https://github.com/koozz/mgit/blob/master/LICENSE)
 [![Downloads](https://img.shields.io/crates/d/mgit.svg)](https://crates.io/crates/mgit)
-[![Dependency status](https://deps.rs/repo/github/koozz/mgit/status.svg)](https://deps.rs/repo/github/koozz/mgit)
 
 Multi-git is a quick tool that could easily have been created with some shell
 scripts, but it's a nice project to tackle a part of my daily workflow.
@@ -58,6 +57,10 @@ Success: 110, Warnings: 3
 * Benchmark (and optimize?).
 
 ## Changelog
+
+### 0.1.8
+
+* Updated dependencies.
 
 ### 0.1.7
 
