@@ -16,7 +16,7 @@ It will:
 * outputting thread-safe in the main thread;
 
 It can even be tweaked with the environment variable `MGIT_PARALLEL`
-(defaulting to number of cores times 2).
+(defaulting to number of cpus times 8).
 
 ## Examples
 
@@ -57,6 +57,11 @@ Success: 110, Warnings: 3
 * Benchmark (and optimize?).
 
 ## Changelog
+
+### 0.1.9
+
+* Increased default thread count.
+* Updated dependencies.
 
 ### 0.1.8
 

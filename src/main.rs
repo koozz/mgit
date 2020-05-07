@@ -27,7 +27,7 @@ fn main() {
     // Allow customizing pool size
     let pool_size: usize = match env::var("MGIT_PARALLEL") {
         Ok(val) => val.parse().unwrap_or(4),
-        Err(_) => num_cpus::get(),
+        Err(_) => num_cpus::get() * 8,
     };
 
     let (tx, rx) = channel();
