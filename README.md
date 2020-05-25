@@ -58,6 +58,10 @@ Success: 110, Warnings: 3
 
 ## Changelog
 
+### 0.1.10
+
+* Updated dependencies.
+
 ### 0.1.9
 
 * Increased default thread count.
